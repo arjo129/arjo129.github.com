@@ -14,7 +14,7 @@ def generate_rss_feed(blog_entries):
     p = Podcast(
         name="Arjo's Blog",
         description="Personal blog of Arjo Chakravarty",
-        website="https://arjo129.github.io",
+        website="https://arjo129.github.io/blog",
         explicit=False,
         language="en-US"
     )
