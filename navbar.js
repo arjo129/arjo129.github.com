@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
-    fetch('navbar.html')
+    // Get the root url: domain + port
+    // For instance if its hosted at arjo129.github.io/subdirectory, then the root url is arjo129.github.io
+    const root_url = window.location.origin;
+    fetch(root_url + '/navbar.html')
         .then(response => response.text())
         .then(data => {
             document.querySelector('header').innerHTML = data;
