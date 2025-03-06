@@ -9,6 +9,33 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0" crossorigin="anonymous">
 
     <title>Arjo's Blog</title>
+
+    <style>
+      .card-img-top {
+        width: 100%;
+        height: 200px; /* Fixed height for consistency */
+        object-fit: cover; /* Maintains aspect ratio */
+      }
+    
+      /* Make tech badges wrap nicely */
+      .techused {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+      }
+    
+      /* Add some spacing between badges */
+      .badge {
+        margin-right: 0.25rem;
+      }
+    
+      @media (max-width: 768px) {
+        .card-img-top {
+          height: 150px; /* Slightly smaller on mobile */
+        }
+      }
+    </style>
   </head>
   <body>
     <header>
@@ -40,13 +67,15 @@
     <div class="content">
       <div class="container">
         <div class="row"><h1>Projects</h1></div>
-        <div class="row d-flex align-items-stretch">
-          <div class="col-4 d-flex align-items-stretch">
-            <div class="card d-flex align-items-stretch">
+        <div class="row g-4">
+          <!-- LangCluster Project -->
+          <div class="col-12 col-lg-6 col-xl-4">
+            <div class="card h-100">
               <img
                 src="imgs/world_map_tea.png"
                 class="card-img-top"
-                alt="Image of how the word 'tea' is pronounced accross a variety of languages">
+                alt="Image of how the word 'tea' is pronounced across a variety of languages"
+                loading="lazy">
               <div class="card-body">
                 <h5 class="card-title">LangCluster</h5>
                 <p class="card-text">
@@ -55,7 +84,6 @@
                   to explore it for yourself or read the blog post to understand
                   how trade, empires and travel influence modern language and
                   how we can recover this information using clustering.
-                  <!--Or I could just say I used "ML"-->
                 </p>
                 <p class="techused">
                   <b>Technologies used:</b>
@@ -65,18 +93,23 @@
                 </p>
               </div>
               <div class="card-footer text-muted">
-                <a href="#" class="btn btn-primary">Demo</a>
-                <a href="#" class="btn">Blog Post</a>
-                <a href="#" class="btn">Source</a>
+                <div class="d-flex gap-2">
+                  <a href="#" class="btn btn-primary">Demo</a>
+                  <a href="#" class="btn btn-outline-secondary">Blog Post</a>
+                  <a href="#" class="btn btn-outline-secondary">Source</a>
+                </div>
               </div>
             </div>
           </div>
-          <div class="col-4 d-flex align-items-stretch">
-            <div class="card d-flex align-items-stretch">
+    
+          <!-- Functional Calculator Project -->
+          <div class="col-12 col-lg-6 col-xl-4">
+            <div class="card h-100">
               <img
                 src="imgs/functional_calculator.png"
                 class="card-img-top"
-                alt="Image of how the word 'tea' is pronounced accross a variety of languages">
+                alt="Screenshot of the Functional Dependency Calculator"
+                loading="lazy">
               <div class="card-body">
                 <h5 class="card-title">Functional Dependency Calculator</h5>
                 <p class="card-text">
@@ -92,13 +125,13 @@
                 </p>
               </div>
               <div class="card-footer text-muted">
-                <a href="#" class="btn btn-primary">Demo</a>
-                <a href="#" class="btn">Blog Post</a>
-                <a href="#" class="btn">Source</a>
+                <div class="d-flex gap-2">
+                  <a href="#" class="btn btn-primary">Demo</a>
+                  <a href="#" class="btn btn-outline-secondary">Blog Post</a>
+                  <a href="#" class="btn btn-outline-secondary">Source</a>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="col-4 d-flex align-items-stretch">
           </div>
         </div>
       </div>
