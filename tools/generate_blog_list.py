@@ -47,6 +47,13 @@ def get_blog_template():
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
     <title>{{ title }} - Arjo's Blog</title>
+    <style>
+      .blog-post {
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    </style>
   </head>
   <body>
     <!-- Navbar will be loaded here -->
