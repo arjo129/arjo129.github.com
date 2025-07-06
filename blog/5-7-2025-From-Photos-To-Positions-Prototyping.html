@@ -37,16 +37,16 @@ are solely my own and do not represent those of my employer or any associated in
 <p>Fast forward to 2025. I’m now married and found myself shopping for gifts. While my wife was browsing in a large shopping mall in Singapore, I was bored in a corner and decided to see if I could "vibe-code" something on my phone. I was especially curious: could we use today’s VLM-based technologies to do indoor localization in a mall?</p>
 <h2 id="vlms-and-reading-maps">VLMs and reading maps</h2>
 <p>Generally if a user looks at a map in a shopping mall, he or she is greeted with something like this:</p>
-<p><img src="https://arjo129.github.io/vps_localization/test_floorplan.webp" alt="floorplan" width="600"/></p>
+<p><img src="https://arjo129.github.io/vps_localization/test_floorplan.webp" alt="floorplan" width="100%"/></p>
 <p>This floorplan is sufficient for humans to navigate. So what about machines? Is there a way for them to use VLMs 
 for localization purposes. Lets start simply: What features are on these maps? Well, there are markings for corridors,
 shops and toilets. For simplicity's sake lets start with shops:</p>
-<p><img src="https://arjo129.github.io/vps_localization/docs/images/gemini_convo.png" alt="gemini convo" width="600"/></p>
+<p><img src="https://arjo129.github.io/vps_localization/docs/images/gemini_convo.png" alt="gemini convo" width="100%"/></p>
 <p>This got my head spinning. Maybe we could simply code out a localization system that uses semantic maps for
 figuring out where a user is within a building. So I got prototyping over the weekend. I vibed out an annotation tool
 and a tool for parsing the annotated files. The annotation tool is available <a href="https://arjo129.github.io/vps_localization/editor/corridor_annotation.html">here</a>.
 It looks something like this:</p>
-<p><img src="https://arjo129.github.io/vps_localization/docs/images/floorplan_annotator.png" alt="floorplan annotation tool" width="600"/></p>
+<p><img src="https://arjo129.github.io/vps_localization/docs/images/floorplan_annotator.png" alt="floorplan annotation tool" width="100%"/></p>
 <p>It was amazing that I could do this in two prompts. In general I've found vibe coding to be great for building such one-of tools. After that we post-process the annotations. For each point on the corridor we determine which shops will be visible based on which direction a user is facing.</p>
 <pre class="codehilite"><code class="language-python">def preprocess_visible_shops(annotations, grid, grid_info, radius=50):
     &quot;&quot;&quot;
@@ -100,10 +100,10 @@ Next we write a small API to query the shops in the image.</p>
     return sorted([normalize_shop_name(item[&quot;shop_name&quot;]) for item in gemini_result])
 </code></pre>
 
-<p>We can now use our pickled list of shops to match against our pickle file.</p>
-<p><img src="https://arjo129.github.io/vps_localization/docs/images/localization_probability.png" alt="localization_probs" width="600"/></p>
+<p>We can now use our pickled list of shops to match against our pickle file. This is the result I got. The yellow dots represent potential positions.</p>
+<p><img src="https://arjo129.github.io/vps_localization/docs/images/localization_probability.png" alt="localization_probs" width="100%"/></p>
 <p>For reference the image I used was:</p>
-<p><img alt="image_of_shops" src="https://arjo129.github.io/vps_localization/test.jpg" /></p>
+<p><img src="https://arjo129.github.io/vps_localization/test.jpg" alt="localization_probs" width="50%"/></p>
 <p>This was honestly incredible. Going from a single photo to reasonably accurate map coordinates was genuinely surprising. Despite some ambiguity, the locations marked were correct—I was indeed standing among the yellow circles! It’s amazing that we can localize against an imprecise map using just a bit of prompting and glue code.</p>
 <p>Some of the ambiguity likely stems from the fact that we’re only using text-based prompting, rather than feeding both the image and the map directly into the VLM.</p>
 <p>Admittedly, this example is somewhat cherry-picked—the photo I used had clearly visible shop signs. Still, it strongly suggests that VLMs can be useful for localization tasks. With video input and additional phone sensor data—perhaps paired with a particle filter—we might be able to further refine the estimate. Alternatively, we could go the "benchmark dataset" route, training a model to map photos to rough map positions more robustly. In the process we could probably kill the planet a little faster as well.</p>

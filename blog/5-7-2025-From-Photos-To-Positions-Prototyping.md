@@ -20,20 +20,20 @@ Fast forward to 2025. I’m now married and found myself shopping for gifts. Whi
 
 Generally if a user looks at a map in a shopping mall, he or she is greeted with something like this:
 
-<img src="https://arjo129.github.io/vps_localization/test_floorplan.webp" alt="floorplan" width="600"/>
+<img src="https://arjo129.github.io/vps_localization/test_floorplan.webp" alt="floorplan" width="100%"/>
 
 This floorplan is sufficient for humans to navigate. So what about machines? Is there a way for them to use VLMs 
 for localization purposes. Lets start simply: What features are on these maps? Well, there are markings for corridors,
 shops and toilets. For simplicity's sake lets start with shops:
 
-<img src="https://arjo129.github.io/vps_localization/docs/images/gemini_convo.png" alt="gemini convo" width="600"/>
+<img src="https://arjo129.github.io/vps_localization/docs/images/gemini_convo.png" alt="gemini convo" width="100%"/>
 
 This got my head spinning. Maybe we could simply code out a localization system that uses semantic maps for
 figuring out where a user is within a building. So I got prototyping over the weekend. I vibed out an annotation tool
 and a tool for parsing the annotated files. The annotation tool is available [here](https://arjo129.github.io/vps_localization/editor/corridor_annotation.html).
 It looks something like this:
 
-<img src="https://arjo129.github.io/vps_localization/docs/images/floorplan_annotator.png" alt="floorplan annotation tool" width="600"/>
+<img src="https://arjo129.github.io/vps_localization/docs/images/floorplan_annotator.png" alt="floorplan annotation tool" width="100%"/>
 
 It was amazing that I could do this in two prompts. In general I've found vibe coding to be great for building such one-of tools. After that we post-process the annotations. For each point on the corridor we determine which shops will be visible based on which direction a user is facing.
 
@@ -90,13 +90,13 @@ def detect_shops_in_image(image_path):
     # Convert the result to a list of shop names
     return sorted([normalize_shop_name(item["shop_name"]) for item in gemini_result])
 ```
-We can now use our pickled list of shops to match against our pickle file.
+We can now use our pickled list of shops to match against our pickle file. This is the result I got. The yellow dots represent potential positions.
 
-<img src="https://arjo129.github.io/vps_localization/docs/images/localization_probability.png" alt="localization_probs" width="600"/>
+<img src="https://arjo129.github.io/vps_localization/docs/images/localization_probability.png" alt="localization_probs" width="100%"/>
 
 For reference the image I used was:
 
-![image_of_shops](https://arjo129.github.io/vps_localization/test.jpg)
+<img src="https://arjo129.github.io/vps_localization/test.jpg" alt="localization_probs" width="50%"/>
 
 This was honestly incredible. Going from a single photo to reasonably accurate map coordinates was genuinely surprising. Despite some ambiguity, the locations marked were correct—I was indeed standing among the yellow circles! It’s amazing that we can localize against an imprecise map using just a bit of prompting and glue code.
 
