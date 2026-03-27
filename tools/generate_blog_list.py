@@ -74,6 +74,23 @@ def get_blog_template():
   </body>
 </html>
 '''
+
+
+def parse_date_from_filename(filename):
+  # Support legacy YYYY-MM-DD and current M-D-YYYY filename prefixes.
+  yyyy_mm_dd_match = re.match(r'^(\d{4})-(\d{2})-(\d{2})', filename)
+  if yyyy_mm_dd_match:
+    year, month, day = yyyy_mm_dd_match.groups()
+    return datetime(int(year), int(month), int(day))
+
+  mm_dd_yyyy_match = re.match(r'^(\d{1,2})-(\d{1,2})-(\d{4})', filename)
+  if mm_dd_yyyy_match:
+    month, day, year = mm_dd_yyyy_match.groups()
+    return datetime(int(year), int(month), int(day))
+
+  return None
+
+
 def process_blog_posts():
     blog_entries = []
     blog_dir = "blog"
@@ -101,13 +118,11 @@ def process_blog_posts():
             first_para = soup.find('p')
             summary = first_para.text if first_para else 'No summary available'
             
-            # Get date from filename (assuming format: YYYY-MM-DD-title.md)
-            date_match = re.match(r'(\d{4}-\d{2}-\d{2})', filename)
-            if date_match:
-                date_str = date_match.group(1)
-                date = datetime.strptime(date_str, '%Y-%m-%d')
-            else:
-                date = datetime.fromtimestamp(os.path.getctime(file_path))
+            # Get date from filename.
+            date = parse_date_from_filename(filename)
+            if date is None:
+              # Use modified time as a stable fallback when no date prefix exists.
+              date = datetime.fromtimestamp(os.path.getmtime(file_path))
             
             # Generate HTML file name
             html_filename = filename.replace('.md', '.html')
