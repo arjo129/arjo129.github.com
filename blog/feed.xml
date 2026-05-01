@@ -8,8 +8,14 @@
     <docs>http://www.rssboard.org/rss-specification</docs>
     <generator>python-podgen v1.1.0 https://podgen.readthedocs.org</generator>
     <language>en-US</language>
-    <lastBuildDate>Fri, 27 Mar 2026 10:44:39 +0000</lastBuildDate>
-    <pubDate>Wed, 07 May 2025 00:00:00 +0000</pubDate>
+    <lastBuildDate>Fri, 01 May 2026 13:12:11 +0000</lastBuildDate>
+    <pubDate>Fri, 27 Mar 2026 00:00:00 +0000</pubDate>
+    <item>
+      <title>What Science Fiction Predicted About AI: A Lightweight Survey</title>
+      <link>https://arjo129.github.io/blog/3-27-2026-SciFi-AI-Analysis.html</link>
+      <description><![CDATA[Artificial intelligence has always been a staple in science fiction. From C-3PO to R. Daneel Olivaw and HAL, AI and robotics have played a fundamental role in the genre. What is particularly interesting about fiction is that it explores how humanity adapts to new circumstances. While often fantastical and exaggerated, the themes portrayed are often prescient.]]></description>
+      <pubDate>Fri, 27 Mar 2026 00:00:00 +0000</pubDate>
+    </item>
     <item>
       <title>From Photos to Positions: Prototyping VLM-Based Indoor Maps</title>
       <link>https://arjo129.github.io/blog/5-7-2025-From-Photos-To-Positions-Prototyping.html</link>
