@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0" crossorigin="anonymous">
+    <title>Voice AI Painter</title>
+    <style>
+        body { background: #f8f9fa; }
+        canvas { border: 1px solid #ced4da; background: white; cursor: crosshair; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 100%; height: auto; }
+        /*.controls { margin: 20px 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }*/
+        #status { font-weight: bold; color: #666; }
+        .paint-shell { max-width: 800px; }
+        .ai-log { width: 100%; height: 60px; background: #222; color: #0f0; padding: 10px; font-family: monospace; font-size: 12px; overflow-y: auto; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <header></header>
+
+    <main class="py-4">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-xl-10 text-center">
+
+    <h2>AI Voice Canvas</h2>
+    <p>Hold <b>Spacebar</b> to talk. Try: <i>"Draw a blue circle where my mouse is"</i></p>
+    <p>This demo requires microphone access and uses chrome's Prompt API</p>
+    <p>Note: This demo uses horrible code gen eval to execute AI-generated drawing commands. Do not use in production.</p>
+    <div class="paint-shell mx-auto text-start">
+    <canvas id="paintCanvas" class="w-100" width="800" height="500"></canvas>
+
+    <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+        <button id="clearBtn" class="btn btn-outline-secondary btn-sm">Clear Canvas</button>
+        <span id="status">Status: Ready</span>
+    </div>
+
+    <div class="ai-log mt-2" id="log">Generated code will appear here...</div>
+    </div>
+
+
+                    </div>
+                </div>
+            </div>
+        </main>
+
+    <script>
+        const canvas = document.getElementById('paintCanvas');
+        const ctx = canvas.getContext('2d');
+        const logEl = document.getElementById('log');
+        const statusEl = document.getElementById('status');
+        
+        // 1. STATE & MOUSE TRACKING
+        let mouseX = 0;
+        let mouseY = 0;
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+
+        // 2. THE PAINTBOT API (What the AI is allowed to do)
+        const PaintBot = {
+            history: [],
+            circle: (x, y, r, color = 'black') => {
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+                PaintBot.history.push(`circle ${x},${y},${r},${color}`);
+            },
+            rect: (x, y, w, h, color = 'black') => {
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, w, h);
+                PaintBot.history.push(`rect ${x},${y},${w},${h},${color}`);
+            },
+            line: (x1, y1, x2, y2, color = 'black', width = 2) => {
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = width;
+                ctx.stroke();
+                PaintBot.history.push(`line ${x1},${y1},${x2},${y2},${color},${width}`);
+            },
+            text: (x, y, text, color = 'black', font = '16px Arial') => {
+                ctx.fillStyle = color;
+                ctx.font = font;
+                ctx.fillText(text, x, y);
+                PaintBot.history.push(`text ${x},${y},${text},${color},${font}`);
+            },
+            clear: () => ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        };
+
+        // 3. SPEECH RECOGNITION SETUP
+        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recog = new Recognition();
+        recog.continuous = false;
+        recog.interimResults = false;
+
+        // 4. PROMPT API LOGIC
+        async function runAIPaint(command) {
+
+            statusEl.innerText = `Status: AI is thinking... ${command}`;
+            
+            try {
+                const session = await LanguageModel.create({
+                   initialPrompts: [{role:'system', content:`
+                    While you are a text based AI, you can draw to the screen using the following APIs.
+                    You are a drawing assistant. You write JavaScript code using the PaintBot object.
+                    Available functions:
+                    - PaintBot.circle(x, y, radius, color)
+                    - PaintBot.rect(x, y, width, height, color)
+                    - PaintBot.line(x1, y1, x2, y2, color, lineWidth)
+                    - PaintBot.text(x, y, text, color, font_in_css_format)
+
+                    Note for the font_in_css_format, the string is directly added to the css font property. So for instance "bold 20px Arial" would be a valid input.
+                    You know the mouse position as it is passed in the prompt. Your job is to generate code within this sandbox
+                    
+                    The current mouse position is x=${mouseX}, y=${mouseY}.
+                    The canvas size is 800x500.
+                    The currently drawn items on screen are: ${PaintBot.history}$
+                    Respond ONLY with the code to execute.
+                    For instance if the user says "draw a red circle where the mouse is" you respond by
+                    \`\`\`Javascript
+                    PaintBot.circle(${mouseX}, ${mouseY}, 10, "red")
+                    \`\`\`
+                    `},
+
+                    {role: 'assistant', content:'```javascript'}]
+                });
+
+                const generatedCode = await session.prompt(command);
+                const cleanCode = generatedCode.replace(/```javascript|```/g, '').trim();
+                
+                logEl.innerText = "> Executing: " + cleanCode;
+                
+                // The "Magic" Eval
+                eval(cleanCode);
+                
+                statusEl.innerText = "Status: Done!";
+            } catch (err) {
+                console.error(err);
+                statusEl.innerText = "Status: Error in AI generation";
+            }
+        }
+
+        // 5. INPUT HANDLERS
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                statusEl.innerText = "Status: Listening...";
+                recog.start();
+            }
+        });
+
+        recog.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            statusEl.innerText = `Status: Heard "${transcript}"`;
+            runAIPaint(transcript);
+        };
+
+        document.getElementById('clearBtn').onclick = () => PaintBot.clear();
+
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+    <script src="/navbar.js"></script>
+</body>
+</html>
