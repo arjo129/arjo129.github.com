@@ -24,8 +24,7 @@
 
     <h2>AI Voice Canvas</h2>
     <p>Hold <b>Spacebar</b> to talk. Try: <i>"Draw a blue circle where my mouse is"</i></p>
-    <p>This demo requires microphone access and uses chrome's Prompt API</p>
-    <p>Note: This demo uses horrible code gen eval to execute AI-generated drawing commands. Do not use in production.</p>
+    <p>This demo requires microphone access and uses chrome's Prompt API. The LLM runs on your computer how cool is that!</p>
     <div class="paint-shell mx-auto text-start">
     <canvas id="paintCanvas" class="w-100" width="800" height="500"></canvas>
 
@@ -58,39 +57,214 @@
             mouseY = e.clientY - rect.top;
         });
 
-        // 2. THE PAINTBOT API (What the AI is allowed to do)
-        const PaintBot = {
-            history: [],
-            circle: (x, y, r, color = 'black') => {
-                ctx.beginPath();
-                ctx.arc(x, y, r, 0, Math.PI * 2);
-                ctx.fillStyle = color;
-                ctx.fill();
-                PaintBot.history.push(`circle ${x},${y},${r},${color}`);
-            },
-            rect: (x, y, w, h, color = 'black') => {
-                ctx.fillStyle = color;
-                ctx.fillRect(x, y, w, h);
-                PaintBot.history.push(`rect ${x},${y},${w},${h},${color}`);
-            },
-            line: (x1, y1, x2, y2, color = 'black', width = 2) => {
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.strokeStyle = color;
-                ctx.lineWidth = width;
-                ctx.stroke();
-                PaintBot.history.push(`line ${x1},${y1},${x2},${y2},${color},${width}`);
-            },
-            text: (x, y, text, color = 'black', font = '16px Arial') => {
-                ctx.fillStyle = color;
-                ctx.font = font;
-                ctx.fillText(text, x, y);
-                PaintBot.history.push(`text ${x},${y},${text},${color},${font}`);
-            },
-            clear: () => ctx.clearRect(0, 0, canvas.width, canvas.height)
+        // 2. THE PAINTBOT API (registered once, then used to build schema + runtime API)
+        const PaintBot = { history: [] };
+        const paintRegistry = new Map();
 
-        };
+        function registerPaintOp(name, config, handler) {
+            paintRegistry.set(name, {
+                name,
+                description: config.description,
+                args: config.args
+            });
+
+            PaintBot[name] = (...args) => {
+                handler(...args);
+                PaintBot.history.push(`${name} ${args.join(',')}`);
+            };
+        }
+
+        registerPaintOp('circle', {
+            description: 'Draw a filled circle',
+            args: [
+                { name: 'x', schema: { type: 'number' } },
+                { name: 'y', schema: { type: 'number' } },
+                { name: 'radius', schema: { type: 'number', minimum: 1 } },
+                { name: 'color', schema: { type: 'string' } }
+            ]
+        }, (x, y, r, color = 'black') => {
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+        });
+
+        registerPaintOp('rect', {
+            description: 'Draw a filled rectangle',
+            args: [
+                { name: 'x', schema: { type: 'number' } },
+                { name: 'y', schema: { type: 'number' } },
+                { name: 'width', schema: { type: 'number', minimum: 1 } },
+                { name: 'height', schema: { type: 'number', minimum: 1 } },
+                { name: 'color', schema: { type: 'string' } }
+            ]
+        }, (x, y, w, h, color = 'black') => {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, w, h);
+        });
+
+        registerPaintOp('line', {
+            description: 'Draw a line segment',
+            args: [
+                { name: 'x1', schema: { type: 'number' } },
+                { name: 'y1', schema: { type: 'number' } },
+                { name: 'x2', schema: { type: 'number' } },
+                { name: 'y2', schema: { type: 'number' } },
+                { name: 'color', schema: { type: 'string' } },
+                { name: 'lineWidth', schema: { type: 'number', minimum: 1 } }
+            ]
+        }, (x1, y1, x2, y2, color = 'black', width = 2) => {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.stroke();
+        });
+
+        registerPaintOp('text', {
+            description: 'Draw text',
+            args: [
+                { name: 'x', schema: { type: 'number' } },
+                { name: 'y', schema: { type: 'number' } },
+                { name: 'text', schema: { type: 'string' } },
+                { name: 'color', schema: { type: 'string' } },
+                { name: 'font', schema: { type: 'string' } }
+            ]
+        }, (x, y, text, color = 'black', font = '16px Arial') => {
+            ctx.fillStyle = color;
+            ctx.font = font;
+            ctx.fillText(text, x, y);
+        });
+
+        registerPaintOp('clear', {
+            description: 'Clear the canvas',
+            args: []
+        }, () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        function buildPaintBotJsonSchema() {
+            const operationSchemas = Array.from(paintRegistry.values()).map((op) => ({
+                type: 'object',
+                additionalProperties: false,
+                required: ['op', 'args'],
+                properties: {
+                    op: { const: op.name },
+                    args: {
+                        type: 'array',
+                        prefixItems: op.args.map((arg) => arg.schema),
+                        minItems: op.args.length,
+                        maxItems: op.args.length
+                    }
+                }
+            }));
+
+            return {
+                type: 'object',
+                additionalProperties: false,
+                required: ['operations'],
+                properties: {
+                    operations: {
+                        type: 'array',
+                        minItems: 1,
+                        maxItems: 20,
+                        items: {
+                            oneOf: operationSchemas
+                        }
+                    }
+                }
+            };
+        }
+
+        function listRegisteredOps() {
+            return Array.from(paintRegistry.values()).map((op) => {
+                const signature = op.args.map((arg) => arg.name).join(', ');
+                return `- PaintBot.${op.name}(${signature})`;
+            }).join('\n');
+        }
+
+        function parseModelJson(raw) {
+            if (raw && typeof raw === 'object') {
+                return raw;
+            }
+
+            if (typeof raw !== 'string') {
+                throw new Error('Model response was not JSON text or object');
+            }
+
+            const clean = raw
+                .replace(/```json/gi, '')
+                .replace(/```javascript/gi, '')
+                .replace(/```/g, '')
+                .trim();
+            return JSON.parse(clean);
+        }
+
+        function isValueCompatibleWithSchema(value, schema) {
+            if (!schema || !schema.type) {
+                return true;
+            }
+
+            if (schema.type === 'number') {
+                if (typeof value !== 'number' || Number.isNaN(value)) {
+                    return false;
+                }
+                if (schema.minimum !== undefined && value < schema.minimum) {
+                    return false;
+                }
+                if (schema.maximum !== undefined && value > schema.maximum) {
+                    return false;
+                }
+                return true;
+            }
+
+            if (schema.type === 'string') {
+                return typeof value === 'string';
+            }
+
+            return true;
+        }
+
+        function validatePaintPlan(plan) {
+            if (!plan || !Array.isArray(plan.operations)) {
+                throw new Error('Invalid plan: operations array missing');
+            }
+
+            for (const step of plan.operations) {
+                const opMeta = paintRegistry.get(step.op);
+                if (!opMeta) {
+                    throw new Error(`Unknown PaintBot op: ${step.op}`);
+                }
+                if (!Array.isArray(step.args)) {
+                    throw new Error(`Invalid args for ${step.op}: args must be an array`);
+                }
+                if (step.args.length !== opMeta.args.length) {
+                    throw new Error(`Invalid args for ${step.op}: expected ${opMeta.args.length}, got ${step.args.length}`);
+                }
+
+                for (let i = 0; i < opMeta.args.length; i += 1) {
+                    const argMeta = opMeta.args[i];
+                    if (!isValueCompatibleWithSchema(step.args[i], argMeta.schema)) {
+                        throw new Error(`Invalid ${argMeta.name} for ${step.op}`);
+                    }
+                }
+            }
+        }
+
+        function executePaintPlan(plan) {
+            validatePaintPlan(plan);
+
+            for (const step of plan.operations) {
+                const fn = PaintBot[step.op];
+                if (typeof fn !== 'function') {
+                    throw new Error(`Unknown PaintBot op: ${step.op}`);
+                }
+                fn(...step.args);
+            }
+        }
+
+        const paintResponseSchema = buildPaintBotJsonSchema();
 
         // 3. SPEECH RECOGNITION SETUP
         const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -106,41 +280,43 @@
             try {
                 const session = await LanguageModel.create({
                    initialPrompts: [{role:'system', content:`
-                    While you are a text based AI, you can draw to the screen using the following APIs.
-                    You are a drawing assistant. You write JavaScript code using the PaintBot object.
-                    Available functions:
-                    - PaintBot.circle(x, y, radius, color)
-                    - PaintBot.rect(x, y, width, height, color)
-                    - PaintBot.line(x1, y1, x2, y2, color, lineWidth)
-                    - PaintBot.text(x, y, text, color, font_in_css_format)
+                                        You are a drawing assistant.
+                                        You CANNOT execute code. You MUST return JSON only.
+                                        Use ONLY these paint operations:
+                                        ${listRegisteredOps()}
 
-                    Note for the font_in_css_format, the string is directly added to the css font property. So for instance "bold 20px Arial" would be a valid input.
-                    You know the mouse position as it is passed in the prompt. Your job is to generate code within this sandbox
+                                        Return an object in this exact format:
+                                        {
+                                            "operations": [{"op":"circle","args":[x,y,radius,"red"]}]
+                                        }
+
+                                        Args must match each operation signature exactly.
+                                        Note for font: the font string is directly assigned to ctx.font (for example "bold 20px Arial").
                     
                     The current mouse position is x=${mouseX}, y=${mouseY}.
                     The canvas size is 800x500.
-                    The currently drawn items on screen are: ${PaintBot.history}$
-                    Respond ONLY with the code to execute.
-                    For instance if the user says "draw a red circle where the mouse is" you respond by
-                    \`\`\`Javascript
-                    PaintBot.circle(${mouseX}, ${mouseY}, 10, "red")
-                    \`\`\`
+                                        The currently drawn items on screen are: ${PaintBot.history}
+                                        Respond ONLY with JSON.
                     `},
-
-                    {role: 'assistant', content:'```javascript'}]
+                                        {role: 'assistant', content:'{"operations":['}]
                 });
 
-                const generatedCode = await session.prompt(command);
-                const cleanCode = generatedCode.replace(/```javascript|```/g, '').trim();
+                let generatedPlan;
+                try {
+                    generatedPlan = await session.prompt(command, { responseConstraint: paintResponseSchema });
+                } catch (constraintErr) {
+                    generatedPlan = await session.prompt(command + '\n\nRespond with JSON only in the format {"operations":[{"op":"circle","args":[100,100,20,"red"]}]}');
+                }
+
+                const plan = parseModelJson(generatedPlan);
                 
-                logEl.innerText = "> Executing: " + cleanCode;
-                
-                // The "Magic" Eval
-                eval(cleanCode);
+                logEl.innerText = "> Executing plan: " + JSON.stringify(plan, null, 2);
+                executePaintPlan(plan);
                 
                 statusEl.innerText = "Status: Done!";
             } catch (err) {
                 console.error(err);
+                logEl.innerText = "> Error: " + (err?.message || String(err));
                 statusEl.innerText = "Status: Error in AI generation";
             }
         }
