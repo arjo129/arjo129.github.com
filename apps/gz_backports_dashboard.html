@@ -1,0 +1,3345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gazebo Sim Backports Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: #151d30;
+            --bg-header: #1b263e;
+            --border-color: #253552;
+            --text-main: #f1f5f9;
+            --text-muted: #64748b;
+            
+            --color-merged: #10b981;
+            --color-open: #3b82f6;
+            --color-closed: #f43f5e;
+            
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 2.5rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 2.5rem;
+        }
+
+        .title-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .last-updated {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+
+
+        /* Controls */
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 300px;
+            max-width: 500px;
+        }
+
+        .search-box input {
+            width: 100%;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .filter-btn {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            background-color: var(--bg-header);
+            color: var(--text-main);
+        }
+
+        .filter-btn.active {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .sort-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .sort-group select {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .sort-group select:focus {
+            border-color: #3b82f6;
+        }
+
+        /* Table */
+        .table-container {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--bg-header);
+            padding: 1rem 1.25rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr {
+            transition: background-color 0.15s;
+        }
+
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        /* PR info */
+        .pr-info {
+            max-width: 500px;
+        }
+
+        .pr-title-link {
+            color: var(--text-main);
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 0.975rem;
+            display: block;
+            margin-bottom: 0.35rem;
+            transition: color 0.15s;
+        }
+
+        .pr-title-link:hover {
+            color: #60a5fa;
+        }
+
+        .pr-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .pr-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+            color: #a78bfa;
+        }
+
+        .pr-author {
+            font-weight: 500;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .badge:hover {
+            transform: translateY(-1px);
+        }
+
+        .badge-merged {
+            background-color: rgba(16, 185, 129, 0.12);
+            color: var(--color-merged);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .badge-merged:hover {
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+        }
+
+        .badge-open {
+            background-color: rgba(59, 130, 246, 0.12);
+            color: var(--color-open);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+        }
+
+        .badge-open:hover {
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .badge-closed {
+            background-color: rgba(244, 63, 94, 0.12);
+            color: var(--color-closed);
+            border: 1px solid rgba(244, 63, 94, 0.25);
+        }
+
+        .badge-closed:hover {
+            box-shadow: 0 0 12px rgba(244, 63, 94, 0.2);
+        }
+
+        .badge-none {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--color-open);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+            animation: pulse 1.6s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 5px rgba(59, 130, 246, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+            }
+        }
+
+        .branch-header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .branch-label {
+            font-size: 0.7rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            display: inline-block;
+            width: max-content;
+            font-weight: 500;
+        }
+
+        .comment-cell {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="title-container">
+                <h1>Gazebo Sim Backports Dashboard</h1>
+                <div class="last-updated">
+                    <span>Last updated: 2026-05-25 03:00:19 UTC</span>
+                </div>
+            </div>
+        </header>
+
+
+
+        <div class="controls-row">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search by PR number, title, author...">
+            </div>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                <div class="sort-group">
+                    <label for="sortBy">Sort by:</label>
+                    <select id="sortBy" onchange="applySorting()">
+                        <option value="mergeDate" selected>Merge Date (Newest)</option>
+                        <option value="prNumber">PR Number (Highest)</option>
+                        <option value="updateDate">Last Updated (Newest)</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <button class="filter-btn active" onclick="setFilter('all', this)">All PRs</button>
+                    <button class="filter-btn" onclick="setFilter('pending', this)">Pending Backports</button>
+                    <button class="filter-btn" onclick="setFilter('completed', this)">Completed Backports</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Original PR</th>
+                        
+            <th>
+                <div class="branch-header">
+                    <span>gz-sim10</span>
+                    <span class="branch-label" style="background-color: #9758E4; color: #ffffff;">
+                        🪵 Jetty (10)
+                    </span>
+                </div>
+            </th>
+        
+
+            <th>
+                <div class="branch-header">
+                    <span>gz-sim9</span>
+                    <span class="branch-label" style="background-color: #d93f0b; color: #ffffff;">
+                        🏛️ Ionic (9)
+                    </span>
+                </div>
+            </th>
+        
+
+            <th>
+                <div class="branch-header">
+                    <span>gz-sim8</span>
+                    <span class="branch-label" style="background-color: #cccccc; color: #111111;">
+                        🎵 Harmonic (8)
+                    </span>
+                </div>
+            </th>
+        
+
+            <th>
+                <div class="branch-header">
+                    <span>ign-gazebo6</span>
+                    <span class="branch-label" style="background-color: #984304; color: #ffffff;">
+                        🏯 Fortress (6)
+                    </span>
+                </div>
+            </th>
+        
+                        <th>Comments</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    
+            <tr data-category="other" data-number="3560" data-merged-at="2026-05-14T22:49:41Z" data-updated-at="2026-05-14T22:49:43Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3560" target="_blank" class="pr-title-link">Prepare for 10.3.0 release</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3560</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on May 14, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3554" data-merged-at="2026-05-13T15:16:06Z" data-updated-at="2026-05-21T12:29:18Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3554" target="_blank" class="pr-title-link">fix(test): adapt ray miss assertion to gz-physics#880</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3554</span>
+                            <span>by <span class="pr-author">@apojomovsky</span></span>
+                            <span>merged on May 13, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="pending" data-number="3541" data-merged-at="2026-05-18T03:37:51Z" data-updated-at="2026-05-23T13:39:46Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3541" target="_blank" class="pr-title-link">Fix Contact state contamination on world reset</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3541</span>
+                            <span>by <span class="pr-author">@XINJIANGMO</span></span>
+                            <span>merged on May 18, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3565" target="_blank" class="badge badge-merged">✓ #3565</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3567" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3567</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3566" target="_blank" class="badge badge-closed">✗ #3566</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3568" target="_blank" class="badge badge-closed">✗ #3568</a></td>
+                <td class="comment-cell">Reset is not supported in ign-gazebo6. Only backport till harmonic. Currently backports blocked by #</td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3539" data-merged-at="2026-05-11T03:03:28Z" data-updated-at="2026-05-11T03:03:30Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3539" target="_blank" class="pr-title-link">Delete python/src/gz/sim/Joint.cc in fortress</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3539</span>
+                            <span>by <span class="pr-author">@arjo129</span></span>
+                            <span>merged on May 11, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3538" data-merged-at="2026-05-12T02:42:46Z" data-updated-at="2026-05-12T02:42:48Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3538" target="_blank" class="pr-title-link">ci.yml: test on Ubuntu 26.04 Resolute</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3538</span>
+                            <span>by <span class="pr-author">@scpeters</span></span>
+                            <span>merged on May 12, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="pending" data-number="3533" data-merged-at="2026-05-19T23:32:55Z" data-updated-at="2026-05-19T23:37:07Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3533" target="_blank" class="pr-title-link">Fix LinearBatteryPlugin state contamination on world reset</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3533</span>
+                            <span>by <span class="pr-author">@XINJIANGMO</span></span>
+                            <span>merged on May 19, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3582" target="_blank" class="badge badge-merged">✓ #3582</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3584" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3584</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3583" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3583</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="pending" data-number="3532" data-merged-at="2026-05-13T21:01:02Z" data-updated-at="2026-05-14T07:20:15Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3532" target="_blank" class="pr-title-link">Add components for setting gravity and static state of entities</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3532</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on May 13, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3555" target="_blank" class="badge badge-merged">✓ #3555</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3559" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3559</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3558" target="_blank" class="badge badge-merged">✓ #3558</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3514" data-merged-at="2026-05-07T02:26:37Z" data-updated-at="2026-05-07T03:02:23Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3514" target="_blank" class="pr-title-link">Fix potential iterator invalidation in EntityTree</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3514</span>
+                            <span>by <span class="pr-author">@luca-della-vedova</span></span>
+                            <span>merged on May 07, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3515" target="_blank" class="badge badge-merged">✓ #3515</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3517" target="_blank" class="badge badge-merged">✓ #3517</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3516" target="_blank" class="badge badge-merged">✓ #3516</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3518" target="_blank" class="badge badge-merged">✓ #3518</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="pending" data-number="3513" data-merged-at="2026-05-18T03:15:17Z" data-updated-at="2026-05-18T03:25:20Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3513" target="_blank" class="pr-title-link">Add a default for touch plugin namespace</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3513</span>
+                            <span>by <span class="pr-author">@luca-della-vedova</span></span>
+                            <span>merged on May 18, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3561" target="_blank" class="badge badge-merged">✓ #3561</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3563" target="_blank" class="badge badge-merged">✓ #3563</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3562" target="_blank" class="badge badge-merged">✓ #3562</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3564" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3564</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="pending" data-number="3512" data-merged-at="2026-05-20T14:10:50Z" data-updated-at="2026-05-24T03:57:41Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3512" target="_blank" class="pr-title-link">Make PostUpdate run serially</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3512</span>
+                            <span>by <span class="pr-author">@luca-della-vedova</span></span>
+                            <span>merged on May 20, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3586" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3586</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3587" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3587</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3588" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3588</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell">Hold of on merging till we see no regressions, potentially breaking behaviour</td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3509" data-merged-at="2026-05-09T00:54:03Z" data-updated-at="2026-05-09T00:54:05Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3509" target="_blank" class="pr-title-link">🛠️ Bump actions/add-to-project from 0.5.0 to 2.0.0</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3509</span>
+                            <span>by <span class="pr-author">@app/dependabot</span></span>
+                            <span>merged on May 09, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="pending" data-number="3507" data-merged-at="2026-05-07T22:33:20Z" data-updated-at="2026-05-07T22:37:23Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3507" target="_blank" class="pr-title-link">🛠️ Bump actions/checkout from 4 to 6</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3507</span>
+                            <span>by <span class="pr-author">@app/dependabot</span></span>
+                            <span>merged on May 07, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3521" target="_blank" class="badge badge-merged">✓ #3521</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3523" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3523</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3522" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3522</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3524" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3524</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="pending" data-number="3503" data-merged-at="2026-05-08T02:15:06Z" data-updated-at="2026-05-21T05:47:03Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3503" target="_blank" class="pr-title-link">Add reset test helpers and migrate reset integration tests</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3503</span>
+                            <span>by <span class="pr-author">@XINJIANGMO</span></span>
+                            <span>merged on May 08, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3569" target="_blank" class="badge badge-merged">✓ #3569</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3571" target="_blank" class="badge badge-merged">✓ #3571</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3591" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3591</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3572" target="_blank" class="badge badge-closed">✗ #3572</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3498" data-merged-at="2026-05-01T00:05:25Z" data-updated-at="2026-05-04T20:22:53Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3498" target="_blank" class="pr-title-link">Added update rate param to Joint state publisher</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3498</span>
+                            <span>by <span class="pr-author">@ahcorde</span></span>
+                            <span>merged on May 01, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3490" data-merged-at="2026-04-24T19:10:35Z" data-updated-at="2026-04-24T19:11:55Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3490" target="_blank" class="pr-title-link">ci.yml: fix push branch filter pattern</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3490</span>
+                            <span>by <span class="pr-author">@scpeters</span></span>
+                            <span>merged on Apr 24, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3492" target="_blank" class="badge badge-merged">✓ #3492</a></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3489" data-merged-at="2026-04-23T01:06:13Z" data-updated-at="2026-04-23T01:06:15Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3489" target="_blank" class="pr-title-link">Prepare for 10.2.0 release</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3489</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Apr 23, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3488" data-merged-at="2026-05-05T22:14:54Z" data-updated-at="2026-05-05T22:14:54Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3488" target="_blank" class="pr-title-link">Make component typeIds constexpr</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3488</span>
+                            <span>by <span class="pr-author">@luca-della-vedova</span></span>
+                            <span>merged on May 05, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3480" data-merged-at="2026-04-16T02:16:41Z" data-updated-at="2026-05-01T22:51:28Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3480" target="_blank" class="pr-title-link">Fix Python test PYTHONPATH: use ENVIRONMENT_MODIFICATION instead of ENVIRONMENT</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3480</span>
+                            <span>by <span class="pr-author">@taylorhoward92</span></span>
+                            <span>merged on Apr 16, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3500" target="_blank" class="badge badge-merged">✓ #3500</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3499" target="_blank" class="badge badge-merged">✓ #3499</a></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="pending" data-number="3478" data-merged-at="2026-04-21T16:23:10Z" data-updated-at="2026-04-21T16:27:39Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3478" target="_blank" class="pr-title-link">Use high resolution timer on Windows</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3478</span>
+                            <span>by <span class="pr-author">@johnwason</span></span>
+                            <span>merged on Apr 21, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3484" target="_blank" class="badge badge-merged">✓ #3484</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3486" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3486</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3485" target="_blank" class="badge badge-merged">✓ #3485</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3487" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3487</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3477" data-merged-at="2026-04-15T04:05:52Z" data-updated-at="2026-04-17T05:28:12Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3477" target="_blank" class="pr-title-link">fix @param mismatches or stray @param doxygen warnings</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3477</span>
+                            <span>by <span class="pr-author">@ammaarrahmed</span></span>
+                            <span>merged on Apr 15, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3476" data-merged-at="2026-05-18T22:43:54Z" data-updated-at="2026-05-18T22:45:52Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3476" target="_blank" class="pr-title-link">Add extensive benchmarking for ECM</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3476</span>
+                            <span>by <span class="pr-author">@luca-della-vedova</span></span>
+                            <span>merged on May 18, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3576" target="_blank" class="badge badge-merged">✓ #3576</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3578" target="_blank" class="badge badge-merged">✓ #3578</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3577" target="_blank" class="badge badge-merged">✓ #3577</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3579" target="_blank" class="badge badge-merged">✓ #3579</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3462" data-merged-at="2026-04-09T01:36:13Z" data-updated-at="2026-04-09T02:37:33Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3462" target="_blank" class="pr-title-link">Add missing VectorDoubleSerializer to JointForceCmd and SlipComplianceCmd</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3462</span>
+                            <span>by <span class="pr-author">@taylorhoward92</span></span>
+                            <span>merged on Apr 09, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3467" target="_blank" class="badge badge-closed">✗ #3467</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3469" target="_blank" class="badge badge-closed">✗ #3469</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3468" target="_blank" class="badge badge-closed">✗ #3468</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3470" target="_blank" class="badge badge-closed">✗ #3470</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="pending" data-number="3461" data-merged-at="2026-04-09T02:43:15Z" data-updated-at="2026-04-09T03:31:22Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3461" target="_blank" class="pr-title-link">Create RenderEngineServerApiBackend component in SimulationRunner</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3461</span>
+                            <span>by <span class="pr-author">@taylorhoward92</span></span>
+                            <span>merged on Apr 09, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3471" target="_blank" class="badge badge-merged">✓ #3471</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3473" target="_blank" class="badge badge-merged">✓ #3473</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3472" target="_blank" class="badge badge-merged">✓ #3472</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3474" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3474</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="pending" data-number="3459" data-merged-at="2026-05-12T03:53:59Z" data-updated-at="2026-05-12T03:57:13Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3459" target="_blank" class="pr-title-link">Fix EventManager RTTI failures across shared-library boundaries</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3459</span>
+                            <span>by <span class="pr-author">@taylorhoward92</span></span>
+                            <span>merged on May 12, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3542" target="_blank" class="badge badge-merged">✓ #3542</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3544" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3544</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3543" target="_blank" class="badge badge-merged">✓ #3543</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3545" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3545</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3457" data-merged-at="2026-04-10T00:26:57Z" data-updated-at="2026-04-10T00:26:57Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3457" target="_blank" class="pr-title-link">fix @param mismatch or stray @param doxygen warnings</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3457</span>
+                            <span>by <span class="pr-author">@ammaarrahmed</span></span>
+                            <span>merged on Apr 10, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3456" data-merged-at="2026-04-07T11:16:14Z" data-updated-at="2026-04-07T11:42:15Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3456" target="_blank" class="pr-title-link">Hydrodynamic updates</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3456</span>
+                            <span>by <span class="pr-author">@caguero</span></span>
+                            <span>merged on Apr 07, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3463" target="_blank" class="badge badge-merged">✓ #3463</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3464" target="_blank" class="badge badge-merged">✓ #3464</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3465" target="_blank" class="badge badge-merged">✓ #3465</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3466" target="_blank" class="badge badge-merged">✓ #3466</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3445" data-merged-at="2026-03-30T11:07:19Z" data-updated-at="2026-04-06T00:46:56Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3445" target="_blank" class="pr-title-link">docs: fix selected Doxygen warnings in docs build</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3445</span>
+                            <span>by <span class="pr-author">@ammaarrahmed</span></span>
+                            <span>merged on Mar 30, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3448" target="_blank" class="badge badge-merged">✓ #3448</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3449" target="_blank" class="badge badge-merged">✓ #3449</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3450" target="_blank" class="badge badge-merged">✓ #3450</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3451" target="_blank" class="badge badge-merged">✓ #3451</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3441" data-merged-at="2026-03-27T22:46:24Z" data-updated-at="2026-03-27T22:46:24Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3441" target="_blank" class="pr-title-link">fix: Use new MeshManager::CreateMesh API</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3441</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Mar 27, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3435" data-merged-at="2026-03-27T20:40:19Z" data-updated-at="2026-03-27T20:41:46Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3435" target="_blank" class="pr-title-link">docs: fix @param mismatches for unused parameters</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3435</span>
+                            <span>by <span class="pr-author">@praiseorji4</span></span>
+                            <span>merged on Mar 27, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3423" data-merged-at="2026-03-25T23:25:39Z" data-updated-at="2026-03-25T23:29:50Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3423" target="_blank" class="pr-title-link">Add cylinder, capsule, ellipsoid and cone support to graded buoyancy</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3423</span>
+                            <span>by <span class="pr-author">@caguero</span></span>
+                            <span>merged on Mar 25, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3429" target="_blank" class="badge badge-merged">✓ #3429</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3430" target="_blank" class="badge badge-merged">✓ #3430</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3431" target="_blank" class="badge badge-merged">✓ #3431</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3432" target="_blank" class="badge badge-merged">✓ #3432</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3422" data-merged-at="2026-03-25T17:33:33Z" data-updated-at="2026-03-25T17:37:40Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3422" target="_blank" class="pr-title-link">Fix graded buoyancy SDF parsing and division by zero</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3422</span>
+                            <span>by <span class="pr-author">@caguero</span></span>
+                            <span>merged on Mar 25, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3425" target="_blank" class="badge badge-merged">✓ #3425</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3426" target="_blank" class="badge badge-merged">✓ #3426</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3427" target="_blank" class="badge badge-merged">✓ #3427</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3428" target="_blank" class="badge badge-merged">✓ #3428</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3419" data-merged-at="2026-03-24T23:06:41Z" data-updated-at="2026-03-27T01:43:50Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3419" target="_blank" class="pr-title-link">Fix doxygen warning in EntityContextMenu.hh</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3419</span>
+                            <span>by <span class="pr-author">@ammaarrahmed</span></span>
+                            <span>merged on Mar 24, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3416" data-merged-at="2026-03-27T08:24:00Z" data-updated-at="2026-03-27T08:25:57Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3416" target="_blank" class="pr-title-link">Fix crash when calling reset in model_photo_shoot</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3416</span>
+                            <span>by <span class="pr-author">@XINJIANGMO</span></span>
+                            <span>merged on Mar 27, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3436" target="_blank" class="badge badge-merged">✓ #3436</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3437" target="_blank" class="badge badge-merged">✓ #3437</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3438" target="_blank" class="badge badge-merged">✓ #3438</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3439" target="_blank" class="badge badge-closed">✗ #3439</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3412" data-merged-at="2026-03-20T00:03:27Z" data-updated-at="2026-03-20T00:03:28Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3412" target="_blank" class="pr-title-link">Use rotary alias packages for CI</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3412</span>
+                            <span>by <span class="pr-author">@j-rivero</span></span>
+                            <span>merged on Mar 20, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3411" data-merged-at="2026-03-19T22:31:10Z" data-updated-at="2026-03-19T22:31:10Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3411" target="_blank" class="pr-title-link">docs: fix XML tag parsing in markdown tutorials</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3411</span>
+                            <span>by <span class="pr-author">@praiseorji4</span></span>
+                            <span>merged on Mar 19, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3410" data-merged-at="2026-03-23T18:13:01Z" data-updated-at="2026-03-24T10:04:00Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3410" target="_blank" class="pr-title-link">Fix some tutorial doxygen warnings </a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3410</span>
+                            <span>by <span class="pr-author">@ammaarrahmed</span></span>
+                            <span>merged on Mar 23, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3405" data-merged-at="2026-03-20T22:33:06Z" data-updated-at="2026-03-25T06:34:04Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3405" target="_blank" class="pr-title-link">Fix running server and GUI together on macOS</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3405</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Mar 20, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3424" target="_blank" class="badge badge-merged">✓ #3424</a></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3403" data-merged-at="2026-03-18T21:55:36Z" data-updated-at="2026-03-18T21:58:07Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3403" target="_blank" class="pr-title-link">Extend TouchPlugin to support auto creation of contact sensors</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3403</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Mar 18, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3406" target="_blank" class="badge badge-merged">✓ #3406</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3407" target="_blank" class="badge badge-merged">✓ #3407</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3408" target="_blank" class="badge badge-merged">✓ #3408</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3399" data-merged-at="2026-03-17T21:01:26Z" data-updated-at="2026-03-17T21:42:09Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3399" target="_blank" class="pr-title-link">docs: fix doxygen parameter inconsistencies in core headers</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3399</span>
+                            <span>by <span class="pr-author">@praiseorji4</span></span>
+                            <span>merged on Mar 17, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3397" data-merged-at="2026-03-17T02:02:54Z" data-updated-at="2026-03-19T11:26:02Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3397" target="_blank" class="pr-title-link">docs: fix doxygen warnings for sdf tag parameters in system header</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3397</span>
+                            <span>by <span class="pr-author">@ammaarrahmed</span></span>
+                            <span>merged on Mar 17, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3396" data-merged-at="2026-03-16T07:12:37Z" data-updated-at="2026-03-16T22:15:47Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3396" target="_blank" class="pr-title-link">Fixed Doxygen warnings related to include/gz/sim/comms files</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3396</span>
+                            <span>by <span class="pr-author">@ammaarrahmed</span></span>
+                            <span>merged on Mar 16, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3384" data-merged-at="2026-03-12T20:36:00Z" data-updated-at="2026-03-12T20:36:05Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3384" target="_blank" class="pr-title-link">Prepare for 8.11.0 Release</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3384</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Mar 12, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3383" data-merged-at="2026-03-12T17:58:15Z" data-updated-at="2026-03-12T17:58:15Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3383" target="_blank" class="pr-title-link">Fix additional warnings (suggestion for #3382)</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3383</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Mar 12, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3382" data-merged-at="2026-03-12T21:54:27Z" data-updated-at="2026-03-13T23:48:11Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3382" target="_blank" class="pr-title-link">Fix unused-result warnings</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3382</span>
+                            <span>by <span class="pr-author">@scpeters</span></span>
+                            <span>merged on Mar 12, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3386" target="_blank" class="badge badge-merged">✓ #3386</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3387" target="_blank" class="badge badge-merged">✓ #3387</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3389" target="_blank" class="badge badge-merged">✓ #3389</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3390" target="_blank" class="badge badge-merged">✓ #3390</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3376" data-merged-at="2026-03-11T20:18:09Z" data-updated-at="2026-03-11T20:18:13Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3376" target="_blank" class="pr-title-link">Remove major version numbers from install paths</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3376</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Mar 11, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="pending" data-number="3375" data-merged-at="2026-05-07T22:26:04Z" data-updated-at="2026-05-07T23:16:24Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3375" target="_blank" class="pr-title-link">Improve performance of `ECM::Entit(y|ies)ByComponents` and `ECM::ChildrenByComponents`</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3375</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on May 07, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3525" target="_blank" class="badge badge-merged">✓ #3525</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3527" target="_blank" class="badge badge-merged">✓ #3527</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3526" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3526</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3528" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3528</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3374" data-merged-at="2026-03-14T02:22:39Z" data-updated-at="2026-03-14T02:25:06Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3374" target="_blank" class="pr-title-link">Extend rgb camera for visualize frustum plugin</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3374</span>
+                            <span>by <span class="pr-author">@XINJIANGMO</span></span>
+                            <span>merged on Mar 14, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3391" target="_blank" class="badge badge-merged">✓ #3391</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3392" target="_blank" class="badge badge-merged">✓ #3392</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3393" target="_blank" class="badge badge-merged">✓ #3393</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3372" data-merged-at="2026-03-13T21:13:20Z" data-updated-at="2026-03-13T21:15:16Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3372" target="_blank" class="pr-title-link">docs: fix doxygen parameter mismatches in core headers</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3372</span>
+                            <span>by <span class="pr-author">@ammaarrahmed</span></span>
+                            <span>merged on Mar 13, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3370" data-merged-at="2026-03-18T06:56:16Z" data-updated-at="2026-03-18T11:43:14Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3370" target="_blank" class="pr-title-link">Add global odometry frame offset support to OdometryPublisher</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3370</span>
+                            <span>by <span class="pr-author">@C88-YQ</span></span>
+                            <span>merged on Mar 18, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3369" data-merged-at="2026-03-06T05:20:32Z" data-updated-at="2026-03-06T05:20:32Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3369" target="_blank" class="pr-title-link">Added missing gz::sim system aliases.</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3369</span>
+                            <span>by <span class="pr-author">@peci1</span></span>
+                            <span>merged on Mar 06, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="pending" data-number="3362" data-merged-at="2026-04-01T22:52:54Z" data-updated-at="2026-04-02T17:02:07Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3362" target="_blank" class="pr-title-link">[Performance] - Remove / Optimize EntitiesByComponents calls</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3362</span>
+                            <span>by <span class="pr-author">@luca-della-vedova</span></span>
+                            <span>merged on Apr 01, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3453" target="_blank" class="badge badge-merged">✓ #3453</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3452" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3452</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3454" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3454</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3360" data-merged-at="2026-03-11T15:10:38Z" data-updated-at="2026-03-11T15:13:03Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3360" target="_blank" class="pr-title-link">Added explicit find package for TINYXML </a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3360</span>
+                            <span>by <span class="pr-author">@BhuvanB404</span></span>
+                            <span>merged on Mar 11, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3379" target="_blank" class="badge badge-merged">✓ #3379</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3400" target="_blank" class="badge badge-merged">✓ #3400</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3402" target="_blank" class="badge badge-merged">✓ #3402</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3354" data-merged-at="2026-02-27T07:35:53Z" data-updated-at="2026-02-27T16:15:06Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3354" target="_blank" class="pr-title-link">Add missing include in lrauv_control example</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3354</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Feb 27, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3356" target="_blank" class="badge badge-merged">✓ #3356</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3357" target="_blank" class="badge badge-merged">✓ #3357</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3358" target="_blank" class="badge badge-merged">✓ #3358</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3346" data-merged-at="2026-02-23T19:29:37Z" data-updated-at="2026-02-23T19:31:00Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3346" target="_blank" class="pr-title-link">Re-enable doxygen on macOS, fix some warnings</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3346</span>
+                            <span>by <span class="pr-author">@scpeters</span></span>
+                            <span>merged on Feb 23, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3348" target="_blank" class="badge badge-merged">✓ #3348</a></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3343" data-merged-at="2026-05-20T20:28:20Z" data-updated-at="2026-05-22T21:59:58Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3343" target="_blank" class="pr-title-link">Add CpuLidar system plugin with optimized physics raycasting</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3343</span>
+                            <span>by <span class="pr-author">@apojomovsky</span></span>
+                            <span>merged on May 20, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3342" data-merged-at="2026-02-24T21:44:05Z" data-updated-at="2026-02-24T21:44:05Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3342" target="_blank" class="pr-title-link">Merge gz-sim10 ➡️  main</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3342</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Feb 24, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3341" data-merged-at="2026-02-23T18:46:34Z" data-updated-at="2026-02-23T18:46:35Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3341" target="_blank" class="pr-title-link">Fix C4530 warning in backward-cpp by enabling /EHsc on MSVC</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3341</span>
+                            <span>by <span class="pr-author">@j-rivero</span></span>
+                            <span>merged on Feb 23, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3332" data-merged-at="2026-02-13T06:17:46Z" data-updated-at="2026-02-13T06:17:46Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3332" target="_blank" class="pr-title-link">Prepare for 6.17.1 Release</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3332</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Feb 13, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="pending" data-number="3331" data-merged-at="2026-02-19T04:20:20Z" data-updated-at="2026-05-15T04:21:47Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3331" target="_blank" class="pr-title-link">Support for user-defined topic in PosePublisher</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3331</span>
+                            <span>by <span class="pr-author">@ntfshard</span></span>
+                            <span>merged on Feb 19, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3338" target="_blank" class="badge badge-merged">✓ #3338</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3339" target="_blank" class="badge badge-merged">✓ #3339</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3548" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3548</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3325" data-merged-at="2026-02-12T16:12:48Z" data-updated-at="2026-02-12T16:14:21Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3325" target="_blank" class="pr-title-link">Remove AUTOMOC from non-GUI targets</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3325</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Feb 12, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3327" target="_blank" class="badge badge-merged">✓ #3327</a></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3323" data-merged-at="2026-02-11T19:19:38Z" data-updated-at="2026-02-11T19:19:38Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3323" target="_blank" class="pr-title-link">Disabled INTEGRATION_mecanum_drive_system test for win32</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3323</span>
+                            <span>by <span class="pr-author">@miguelgonrod</span></span>
+                            <span>merged on Feb 11, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3320" data-merged-at="2026-02-12T18:35:50Z" data-updated-at="2026-02-12T18:37:36Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3320" target="_blank" class="pr-title-link">Add <collision> parameter to TouchPlugin</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3320</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Feb 12, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3328" target="_blank" class="badge badge-merged">✓ #3328</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3329" target="_blank" class="badge badge-merged">✓ #3329</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3330" target="_blank" class="badge badge-merged">✓ #3330</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3311" data-merged-at="2026-02-05T05:40:02Z" data-updated-at="2026-02-05T05:40:03Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3311" target="_blank" class="pr-title-link">[bazel] Build fixes for MacOS</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3311</span>
+                            <span>by <span class="pr-author">@shameekganguly</span></span>
+                            <span>merged on Feb 05, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3308" data-merged-at="2026-02-04T23:42:17Z" data-updated-at="2026-02-04T23:43:03Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3308" target="_blank" class="pr-title-link">[bazel/ infra] Fix publish.yaml indent error</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3308</span>
+                            <span>by <span class="pr-author">@shameekganguly</span></span>
+                            <span>merged on Feb 04, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3313" target="_blank" class="badge badge-merged">✓ #3313</a></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3303" data-merged-at="2026-02-04T03:54:43Z" data-updated-at="2026-02-04T03:54:45Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3303" target="_blank" class="pr-title-link">Prepare for 10.1.1 release</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3303</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Feb 04, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3302" data-merged-at="2026-02-03T23:54:24Z" data-updated-at="2026-02-04T00:06:05Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3302" target="_blank" class="pr-title-link">[bazel/infra] Minimize manual steps in publish to BCR workflow</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3302</span>
+                            <span>by <span class="pr-author">@shameekganguly</span></span>
+                            <span>merged on Feb 03, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3305" target="_blank" class="badge badge-merged">✓ #3305</a></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3301" data-merged-at="2026-02-11T02:00:01Z" data-updated-at="2026-02-11T14:01:33Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3301" target="_blank" class="pr-title-link">Prevent duplicate loading of default systems with legacy ignition plugins</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3301</span>
+                            <span>by <span class="pr-author">@naitikpahwa18</span></span>
+                            <span>merged on Feb 11, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3322" target="_blank" class="badge badge-merged">✓ #3322</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3321" target="_blank" class="badge badge-merged">✓ #3321</a></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3296" data-merged-at="2026-01-31T03:24:17Z" data-updated-at="2026-01-31T03:25:45Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3296" target="_blank" class="pr-title-link">Fix deprecation warning in `benchmark`</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3296</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Jan 31, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3297" target="_blank" class="badge badge-merged">✓ #3297</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3298" target="_blank" class="badge badge-merged">✓ #3298</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3299" target="_blank" class="badge badge-merged">✓ #3299</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3300" target="_blank" class="badge badge-merged">✓ #3300</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3294" data-merged-at="2026-01-30T02:03:39Z" data-updated-at="2026-01-30T02:03:41Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3294" target="_blank" class="pr-title-link">Fortress: disable Ubuntu Focal CI</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3294</span>
+                            <span>by <span class="pr-author">@scpeters</span></span>
+                            <span>merged on Jan 30, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3290" data-merged-at="2026-02-03T02:14:50Z" data-updated-at="2026-02-04T22:12:47Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3290" target="_blank" class="pr-title-link">Fix regression in Server behavior when it is run with a bad sdf file</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3290</span>
+                            <span>by <span class="pr-author">@shameekganguly</span></span>
+                            <span>merged on Feb 03, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3286" data-merged-at="2026-02-06T21:34:34Z" data-updated-at="2026-02-06T21:36:02Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3286" target="_blank" class="pr-title-link">Fix SDF generation (world saving) when schemed URIs are used for resource URIs</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3286</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Feb 06, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3315" target="_blank" class="badge badge-merged">✓ #3315</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3316" target="_blank" class="badge badge-merged">✓ #3316</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3282" data-merged-at="2026-01-21T18:18:15Z" data-updated-at="2026-01-21T18:18:17Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3282" target="_blank" class="pr-title-link">Prepare for 10.1.0 release</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3282</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Jan 21, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3280" data-merged-at="2026-01-30T02:51:42Z" data-updated-at="2026-02-01T13:34:57Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3280" target="_blank" class="pr-title-link">Component Inspector: add Copy SDF Pose action</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3280</span>
+                            <span>by <span class="pr-author">@naitikpahwa18</span></span>
+                            <span>merged on Jan 30, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3274" data-merged-at="2026-01-20T21:32:06Z" data-updated-at="2026-01-20T21:32:51Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3274" target="_blank" class="pr-title-link">[bazel] Fix CI on MacOS</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3274</span>
+                            <span>by <span class="pr-author">@shameekganguly</span></span>
+                            <span>merged on Jan 20, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3272" data-merged-at="2026-02-08T11:49:05Z" data-updated-at="2026-05-08T15:59:05Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3272" target="_blank" class="pr-title-link">Add getters for joint velocity, effort, and position limits</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3272</span>
+                            <span>by <span class="pr-author">@naitikpahwa18</span></span>
+                            <span>merged on Feb 08, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3534" target="_blank" class="badge badge-merged">✓ #3534</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3536" target="_blank" class="badge badge-merged">✓ #3536</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3535" target="_blank" class="badge badge-merged">✓ #3535</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3537" target="_blank" class="badge badge-merged">✓ #3537</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3269" data-merged-at="2026-01-20T19:25:05Z" data-updated-at="2026-01-20T19:26:31Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3269" target="_blank" class="pr-title-link">Improve RTF Stability and Precision</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3269</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Jan 20, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3276" target="_blank" class="badge badge-merged">✓ #3276</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3277" target="_blank" class="badge badge-merged">✓ #3277</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3278" target="_blank" class="badge badge-merged">✓ #3278</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3267" data-merged-at="2026-02-10T21:05:00Z" data-updated-at="2026-02-10T21:05:01Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3267" target="_blank" class="pr-title-link">Set parent world entity before loading plugins for spawned entities</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3267</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Feb 10, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3262" data-merged-at="2026-01-12T18:17:02Z" data-updated-at="2026-01-12T18:20:39Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3262" target="_blank" class="pr-title-link">Prevent publishing empty messages in pose publisher</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3262</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Jan 12, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3264" target="_blank" class="badge badge-merged">✓ #3264</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3263" target="_blank" class="badge badge-merged">✓ #3263</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3265" target="_blank" class="badge badge-merged">✓ #3265</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3260" data-merged-at="2026-01-08T23:12:20Z" data-updated-at="2026-01-09T05:52:52Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3260" target="_blank" class="pr-title-link">ParticleEmitter: do not use header for topic</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3260</span>
+                            <span>by <span class="pr-author">@ntfshard</span></span>
+                            <span>merged on Jan 08, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3256" data-merged-at="2026-01-08T22:57:19Z" data-updated-at="2026-01-08T22:57:21Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3256" target="_blank" class="pr-title-link">Find jetty packages with explicit version</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3256</span>
+                            <span>by <span class="pr-author">@scpeters</span></span>
+                            <span>merged on Jan 08, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3254" data-merged-at="2026-01-08T09:25:54Z" data-updated-at="2026-01-08T09:25:55Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3254" target="_blank" class="pr-title-link">IMU system: react to gravity changes</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3254</span>
+                            <span>by <span class="pr-author">@IceShuttle</span></span>
+                            <span>merged on Jan 08, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3248" data-merged-at="2026-03-13T18:06:53Z" data-updated-at="2026-03-13T18:06:53Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3248" target="_blank" class="pr-title-link">Bump main to 11.0.0~pre1</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3248</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Mar 13, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3244" data-merged-at="2026-01-07T18:56:33Z" data-updated-at="2026-01-08T15:13:42Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3244" target="_blank" class="pr-title-link">ParticleEmitter can use topic from SDF</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3244</span>
+                            <span>by <span class="pr-author">@ntfshard</span></span>
+                            <span>merged on Jan 07, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3259" target="_blank" class="badge badge-merged">✓ #3259</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3257" target="_blank" class="badge badge-merged">✓ #3257</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3258" target="_blank" class="badge badge-merged">✓ #3258</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3240" data-merged-at="2026-01-08T03:25:26Z" data-updated-at="2026-02-07T03:12:19Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3240" target="_blank" class="pr-title-link">Fix flaky test by lowering resolution</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3240</span>
+                            <span>by <span class="pr-author">@XINJIANGMO</span></span>
+                            <span>merged on Jan 08, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3236" data-merged-at="2025-12-23T19:03:01Z" data-updated-at="2025-12-23T19:04:29Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3236" target="_blank" class="pr-title-link">Prevent crash by adding zero check after convex decomposition</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3236</span>
+                            <span>by <span class="pr-author">@XINJIANGMO</span></span>
+                            <span>merged on Dec 23, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3237" target="_blank" class="badge badge-merged">✓ #3237</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3238" target="_blank" class="badge badge-merged">✓ #3238</a></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3231" data-merged-at="2025-12-19T21:58:50Z" data-updated-at="2025-12-20T19:24:25Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3231" target="_blank" class="pr-title-link">Suppress child link warning in DetachableJoint</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3231</span>
+                            <span>by <span class="pr-author">@caguero</span></span>
+                            <span>merged on Dec 19, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3234" target="_blank" class="badge badge-merged">✓ #3234</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3232" target="_blank" class="badge badge-merged">✓ #3232</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3233" target="_blank" class="badge badge-merged">✓ #3233</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3235" target="_blank" class="badge badge-merged">✓ #3235</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3224" data-merged-at="2025-12-18T00:57:54Z" data-updated-at="2025-12-18T01:01:37Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3224" target="_blank" class="pr-title-link">Make tests more robust</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3224</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Dec 18, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3226" target="_blank" class="badge badge-merged">✓ #3226</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3227" target="_blank" class="badge badge-merged">✓ #3227</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3228" target="_blank" class="badge badge-merged">✓ #3228</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3223" data-merged-at="2025-12-23T08:14:34Z" data-updated-at="2025-12-23T08:14:35Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3223" target="_blank" class="pr-title-link">[bazel/infra] Future-proof branch filtering</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3223</span>
+                            <span>by <span class="pr-author">@shameekganguly</span></span>
+                            <span>merged on Dec 23, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3222" data-merged-at="2025-12-23T08:14:50Z" data-updated-at="2026-01-02T19:52:49Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3222" target="_blank" class="pr-title-link">[bazel/infra] Disable windows CI</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3222</span>
+                            <span>by <span class="pr-author">@shameekganguly</span></span>
+                            <span>merged on Dec 23, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3252" target="_blank" class="badge badge-merged">✓ #3252</a></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3221" data-merged-at="2025-12-23T08:15:30Z" data-updated-at="2026-01-02T18:55:30Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3221" target="_blank" class="pr-title-link">[bazel/infra] Add manual BCR release workflow</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3221</span>
+                            <span>by <span class="pr-author">@shameekganguly</span></span>
+                            <span>merged on Dec 23, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3250" target="_blank" class="badge badge-merged">✓ #3250</a></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3219" data-merged-at="2025-12-15T06:10:13Z" data-updated-at="2025-12-15T06:10:15Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3219" target="_blank" class="pr-title-link">Manual backport of: Bazel updates: prep for BCR automation (#3216)</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3219</span>
+                            <span>by <span class="pr-author">@shameekganguly</span></span>
+                            <span>merged on Dec 15, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3218" data-merged-at="2025-12-12T23:51:03Z" data-updated-at="2025-12-12T23:51:04Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3218" target="_blank" class="pr-title-link">Manual forward port of: Bazel updates (#3216)</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3218</span>
+                            <span>by <span class="pr-author">@shameekganguly</span></span>
+                            <span>merged on Dec 12, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3216" data-merged-at="2025-12-12T16:41:57Z" data-updated-at="2025-12-12T16:41:58Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3216" target="_blank" class="pr-title-link">Bazel updates: prep for BCR automation</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3216</span>
+                            <span>by <span class="pr-author">@shameekganguly</span></span>
+                            <span>merged on Dec 12, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3205" data-merged-at="2025-12-01T23:59:18Z" data-updated-at="2025-12-01T23:59:20Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3205" target="_blank" class="pr-title-link">Backport use of google-test 1.14 in example test</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3205</span>
+                            <span>by <span class="pr-author">@scpeters</span></span>
+                            <span>merged on Dec 01, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3203" data-merged-at="2025-12-01T19:08:17Z" data-updated-at="2025-12-02T14:13:22Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3203" target="_blank" class="pr-title-link">Fix: silence backward switch default warning</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3203</span>
+                            <span>by <span class="pr-author">@miguelgonrod</span></span>
+                            <span>merged on Dec 01, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3206" target="_blank" class="badge badge-merged">✓ #3206</a></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3197" data-merged-at="2025-11-19T00:23:18Z" data-updated-at="2025-11-19T00:58:37Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3197" target="_blank" class="pr-title-link">Gravity update Gui</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3197</span>
+                            <span>by <span class="pr-author">@IceShuttle</span></span>
+                            <span>merged on Nov 19, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3198" target="_blank" class="badge badge-merged">✓ #3198</a></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="pending" data-number="3189" data-merged-at="2025-11-16T01:16:14Z" data-updated-at="2025-11-16T01:22:50Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3189" target="_blank" class="pr-title-link">Gravity set command fixed</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3189</span>
+                            <span>by <span class="pr-author">@IceShuttle</span></span>
+                            <span>merged on Nov 16, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3192" target="_blank" class="badge badge-merged">✓ #3192</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3190" target="_blank" class="badge badge-merged">✓ #3190</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3191" target="_blank" class="badge badge-merged">✓ #3191</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3193" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3193</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3183" data-merged-at="2025-12-15T21:17:15Z" data-updated-at="2025-12-15T21:17:17Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3183" target="_blank" class="pr-title-link">Suppress particle emitter deprecation warnings on homebrew-arm64</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3183</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Dec 15, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3167" data-merged-at="2025-11-07T17:50:53Z" data-updated-at="2025-11-11T17:48:20Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3167" target="_blank" class="pr-title-link">Open file dialog for mesh selection with less confusing filter</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3167</span>
+                            <span>by <span class="pr-author">@ntfshard</span></span>
+                            <span>merged on Nov 07, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3176" target="_blank" class="badge badge-merged">✓ #3176</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3181" target="_blank" class="badge badge-merged">✓ #3181</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3182" target="_blank" class="badge badge-merged">✓ #3182</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3166" data-merged-at="2025-11-06T17:49:38Z" data-updated-at="2025-11-06T18:01:44Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3166" target="_blank" class="pr-title-link">Fix sim_main console error logging on Windows</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3166</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Nov 06, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3175" target="_blank" class="badge badge-closed">✗ #3175</a></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3165" data-merged-at="2025-11-12T05:25:27Z" data-updated-at="2025-11-12T05:27:11Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3165" target="_blank" class="pr-title-link">Fixes the RL Demo Crash (issue #3100)</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3165</span>
+                            <span>by <span class="pr-author">@shawnkchan</span></span>
+                            <span>merged on Nov 12, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3164" data-merged-at="2025-11-01T04:29:05Z" data-updated-at="2025-11-01T04:29:06Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3164" target="_blank" class="pr-title-link">Add class-level docstrings to Python bindings</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3164</span>
+                            <span>by <span class="pr-author">@anuragroy2001</span></span>
+                            <span>merged on Nov 01, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="pending" data-number="3160" data-merged-at="2025-11-03T23:44:52Z" data-updated-at="2025-11-03T23:49:15Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3160" target="_blank" class="pr-title-link">NetworkManager: fix entity creation in network secondary</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3160</span>
+                            <span>by <span class="pr-author">@srmainwaring</span></span>
+                            <span>merged on Nov 03, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3169" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3169</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3170" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3170</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3171" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3171</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3159" data-merged-at="2025-10-28T08:50:04Z" data-updated-at="2025-10-28T08:50:05Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3159" target="_blank" class="pr-title-link">Set default camera angle in cart_pole example</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3159</span>
+                            <span>by <span class="pr-author">@scpeters</span></span>
+                            <span>merged on Oct 28, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3156" data-merged-at="2025-10-24T22:36:09Z" data-updated-at="2025-10-24T22:36:11Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3156" target="_blank" class="pr-title-link">Fix generating gz-sim8 doxygen files on Jammy</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3156</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Oct 24, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3153" data-merged-at="2025-10-24T16:53:55Z" data-updated-at="2025-10-24T16:54:03Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3153" target="_blank" class="pr-title-link">Prepare for 8.10.0 Release</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3153</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Oct 24, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3152" data-merged-at="2025-10-24T16:54:17Z" data-updated-at="2025-10-24T16:54:22Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3152" target="_blank" class="pr-title-link">Prepare for 9.5.0 Release</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3152</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Oct 24, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3151" data-merged-at="2025-10-24T18:20:22Z" data-updated-at="2025-10-24T18:20:24Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3151" target="_blank" class="pr-title-link">Update terrain color in DEM tutorial</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3151</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Oct 24, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3146" data-merged-at="2025-10-23T20:20:48Z" data-updated-at="2025-10-23T20:23:21Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3146" target="_blank" class="pr-title-link">Clean up temporary home directory to make tests more robust</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3146</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Oct 23, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3149" target="_blank" class="badge badge-merged">✓ #3149</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3147" target="_blank" class="badge badge-merged">✓ #3147</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3148" target="_blank" class="badge badge-merged">✓ #3148</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3150" target="_blank" class="badge badge-merged">✓ #3150</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="pending" data-number="3138" data-merged-at="2025-10-22T15:16:46Z" data-updated-at="2025-10-23T14:44:48Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3138" target="_blank" class="pr-title-link">EnvironmentPreload visualise static environments</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3138</span>
+                            <span>by <span class="pr-author">@srmainwaring</span></span>
+                            <span>merged on Oct 22, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3143" target="_blank" class="badge badge-merged">✓ #3143</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3144" target="_blank" class="badge badge-open"><span class="pulse-dot"></span> #3144</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3142" target="_blank" class="badge badge-closed">✗ #3142</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3137" data-merged-at="2026-05-05T17:03:49Z" data-updated-at="2026-05-06T01:37:25Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3137" target="_blank" class="pr-title-link">Fix crash when adding a `Light` via `Component Inspector Editor`</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3137</span>
+                            <span>by <span class="pr-author">@XINJIANGMO</span></span>
+                            <span>merged on May 05, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3504" target="_blank" class="badge badge-merged">✓ #3504</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3505" target="_blank" class="badge badge-merged">✓ #3505</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3506" target="_blank" class="badge badge-merged">✓ #3506</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3135" data-merged-at="2026-02-10T17:19:34Z" data-updated-at="2026-02-11T01:08:40Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3135" target="_blank" class="pr-title-link">Fix thread issue by adding check for invalid CLI combo</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3135</span>
+                            <span>by <span class="pr-author">@XINJIANGMO</span></span>
+                            <span>merged on Feb 10, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3130" data-merged-at="2025-11-07T17:54:22Z" data-updated-at="2025-11-07T17:55:15Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3130" target="_blank" class="pr-title-link">Fix websocket server proto definitions to include top-level enums</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3130</span>
+                            <span>by <span class="pr-author">@cmeng-gao</span></span>
+                            <span>merged on Nov 07, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3118" data-merged-at="2025-11-07T17:51:59Z" data-updated-at="2025-11-07T17:52:38Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3118" target="_blank" class="pr-title-link">Fix help text display issue in JointPositionController plugin</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3118</span>
+                            <span>by <span class="pr-author">@XINJIANGMO</span></span>
+                            <span>merged on Nov 07, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3113" data-merged-at="2025-10-16T15:07:12Z" data-updated-at="2025-10-16T15:09:48Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3113" target="_blank" class="pr-title-link">Disable failing test on macOS in EntityComponentManager_TEST</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3113</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Oct 16, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3121" target="_blank" class="badge badge-merged">✓ #3121</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3122" target="_blank" class="badge badge-merged">✓ #3122</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3123" target="_blank" class="badge badge-merged">✓ #3123</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3111" data-merged-at="2025-10-15T21:15:59Z" data-updated-at="2025-10-15T21:18:10Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3111" target="_blank" class="pr-title-link">Fix xml syntax in shadow texture size tutorial</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3111</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Oct 15, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3114" target="_blank" class="badge badge-merged">✓ #3114</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3115" target="_blank" class="badge badge-merged">✓ #3115</a></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3110" data-merged-at="2025-10-15T01:08:18Z" data-updated-at="2025-10-15T01:09:36Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3110" target="_blank" class="pr-title-link">Fix FileDialog when saving world</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3110</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Oct 15, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3112" target="_blank" class="badge badge-merged">✓ #3112</a></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3108" data-merged-at="2025-10-13T14:11:49Z" data-updated-at="2025-10-13T14:11:49Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3108" target="_blank" class="pr-title-link">Disable Quick Start Dialog on Windows</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3108</span>
+                            <span>by <span class="pr-author">@traversaro</span></span>
+                            <span>merged on Oct 13, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3105" data-merged-at="2025-10-13T14:13:48Z" data-updated-at="2025-10-13T14:13:48Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3105" target="_blank" class="pr-title-link">Fix relocatability of gz-sim-main executable</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3105</span>
+                            <span>by <span class="pr-author">@traversaro</span></span>
+                            <span>merged on Oct 13, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3104" data-merged-at="2025-10-29T20:30:26Z" data-updated-at="2025-10-29T20:31:30Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3104" target="_blank" class="pr-title-link">sim_main: Print clear error in case CreateProcessA fails</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3104</span>
+                            <span>by <span class="pr-author">@traversaro</span></span>
+                            <span>merged on Oct 29, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3095" data-merged-at="2025-09-29T19:31:01Z" data-updated-at="2025-09-29T19:31:03Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3095" target="_blank" class="pr-title-link">Prepare for 10.0.0 release</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3095</span>
+                            <span>by <span class="pr-author">@caguero</span></span>
+                            <span>merged on Sep 29, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3093" data-merged-at="2025-09-24T22:00:48Z" data-updated-at="2025-09-24T22:00:48Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3093" target="_blank" class="pr-title-link">Add missing dependencies to package.xml</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3093</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Sep 24, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3092" data-merged-at="2025-09-25T00:28:05Z" data-updated-at="2025-09-25T00:28:05Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3092" target="_blank" class="pr-title-link">Prepare for 10.0.0-pre2 Release</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3092</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Sep 25, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3088" data-merged-at="2025-09-29T19:28:46Z" data-updated-at="2025-09-29T19:28:48Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3088" target="_blank" class="pr-title-link">Don't install vendored backward files (take II)</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3088</span>
+                            <span>by <span class="pr-author">@j-rivero</span></span>
+                            <span>merged on Sep 29, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3087" data-merged-at="2025-09-16T01:02:28Z" data-updated-at="2025-09-16T01:02:30Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3087" target="_blank" class="pr-title-link">Use common::findFile when searching for slip map in LookupWheelSlip system</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3087</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Sep 16, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3085" data-merged-at="2025-09-20T01:19:09Z" data-updated-at="2025-11-17T20:35:16Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3085" target="_blank" class="pr-title-link">Set non-unique material to submesh when updating cast shadows property</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3085</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Sep 20, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3195" target="_blank" class="badge badge-merged">✓ #3195</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3196" target="_blank" class="badge badge-merged">✓ #3196</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3084" data-merged-at="2025-11-13T20:56:32Z" data-updated-at="2025-11-13T20:59:01Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3084" target="_blank" class="pr-title-link">Fix crash when setting Anisotropic property after Global Illumination disabled by adding validity checks for `GI` and `enabled` state</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3084</span>
+                            <span>by <span class="pr-author">@XINJIANGMO</span></span>
+                            <span>merged on Nov 13, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3188" target="_blank" class="badge badge-merged">✓ #3188</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3186" target="_blank" class="badge badge-merged">✓ #3186</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3187" target="_blank" class="badge badge-merged">✓ #3187</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3081" data-merged-at="2025-09-09T16:56:19Z" data-updated-at="2025-09-09T16:56:21Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3081" target="_blank" class="pr-title-link">Fixed create system plugins tutorial</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3081</span>
+                            <span>by <span class="pr-author">@ahcorde</span></span>
+                            <span>merged on Sep 09, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3078" data-merged-at="2026-02-13T10:03:18Z" data-updated-at="2026-02-13T12:02:34Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3078" target="_blank" class="pr-title-link">Fix crash when selecting static models without links by adding empty check</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3078</span>
+                            <span>by <span class="pr-author">@XINJIANGMO</span></span>
+                            <span>merged on Feb 13, 2026</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3076" data-merged-at="2025-09-08T17:10:10Z" data-updated-at="2025-09-08T17:10:12Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3076" target="_blank" class="pr-title-link">Prepare for 9.4.0 release</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3076</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Sep 08, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3074" data-merged-at="2025-09-09T21:24:23Z" data-updated-at="2025-09-09T21:24:30Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3074" target="_blank" class="pr-title-link">Fix sporadic crash when launching GUI client on windows</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3074</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Sep 09, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3065" data-merged-at="2025-09-05T01:25:11Z" data-updated-at="2025-09-05T01:25:11Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3065" target="_blank" class="pr-title-link">Disable `UtilTest.ResolveSdfWorldFile` on macOS</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3065</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Sep 05, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3062" data-merged-at="2025-09-04T21:34:37Z" data-updated-at="2025-09-05T13:36:37Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3062" target="_blank" class="pr-title-link">Fix crash and synchronize gui when disabling `gi` with active debug visualization mode</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3062</span>
+                            <span>by <span class="pr-author">@XINJIANGMO</span></span>
+                            <span>merged on Sep 04, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3066" target="_blank" class="badge badge-merged">✓ #3066</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3067" target="_blank" class="badge badge-merged">✓ #3067</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3068" target="_blank" class="badge badge-merged">✓ #3068</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3059" data-merged-at="2025-09-05T16:45:21Z" data-updated-at="2025-09-06T00:43:51Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3059" target="_blank" class="pr-title-link">Fix crash when setting debug visualization mode while `gi` is disabled</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3059</span>
+                            <span>by <span class="pr-author">@XINJIANGMO</span></span>
+                            <span>merged on Sep 05, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><a href="https://github.com/gazebosim/gz-sim/pull/3071" target="_blank" class="badge badge-merged">✓ #3071</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3072" target="_blank" class="badge badge-merged">✓ #3072</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3073" target="_blank" class="badge badge-merged">✓ #3073</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3056" data-merged-at="2025-09-24T02:41:45Z" data-updated-at="2025-09-24T02:41:47Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3056" target="_blank" class="pr-title-link">Add tutorial on wheel slip systems</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3056</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Sep 24, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3054" data-merged-at="2025-09-03T19:11:51Z" data-updated-at="2025-09-03T19:11:52Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3054" target="_blank" class="pr-title-link">Update tutorial links</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3054</span>
+                            <span>by <span class="pr-author">@caguero</span></span>
+                            <span>merged on Sep 03, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3052" data-merged-at="2025-09-03T15:53:30Z" data-updated-at="2025-09-03T15:53:31Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3052" target="_blank" class="pr-title-link">Fix saving world through GUI</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3052</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Sep 03, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3051" data-merged-at="2025-09-04T16:26:07Z" data-updated-at="2026-02-07T03:19:07Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3051" target="_blank" class="pr-title-link">Add Null Check for Scene Initialization in `onRefreshCamerasImpl` to Prevent Crash</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3051</span>
+                            <span>by <span class="pr-author">@XINJIANGMO</span></span>
+                            <span>merged on Sep 04, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3063" target="_blank" class="badge badge-merged">✓ #3063</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3064" target="_blank" class="badge badge-merged">✓ #3064</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3049" data-merged-at="2025-09-05T16:43:13Z" data-updated-at="2025-09-06T00:43:26Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3049" target="_blank" class="pr-title-link">Fix Null Pointer Dereference by Separating Initialization and State Checks in `AddCascade` Method</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3049</span>
+                            <span>by <span class="pr-author">@XINJIANGMO</span></span>
+                            <span>merged on Sep 05, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3045" data-merged-at="2025-08-29T19:53:58Z" data-updated-at="2025-08-29T19:53:58Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3045" target="_blank" class="pr-title-link">Remove obsolete tag from sdf</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3045</span>
+                            <span>by <span class="pr-author">@nikodemj9</span></span>
+                            <span>merged on Aug 29, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3044" data-merged-at="2025-08-29T19:56:14Z" data-updated-at="2025-08-29T21:24:23Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3044" target="_blank" class="pr-title-link">Update GUI Runner initial state request timing</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3044</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Aug 29, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3046" target="_blank" class="badge badge-merged">✓ #3046</a></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3047" target="_blank" class="badge badge-merged">✓ #3047</a></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3043" data-merged-at="2025-09-05T16:33:05Z" data-updated-at="2025-09-05T16:33:05Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3043" target="_blank" class="pr-title-link">Fix comment for logical camera topic</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3043</span>
+                            <span>by <span class="pr-author">@akky20</span></span>
+                            <span>merged on Sep 05, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3042" data-merged-at="2025-09-03T15:52:39Z" data-updated-at="2025-09-03T15:52:40Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3042" target="_blank" class="pr-title-link">Update theory_hydrodynamics.md with slight wording change</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3042</span>
+                            <span>by <span class="pr-author">@jmackay2</span></span>
+                            <span>merged on Sep 03, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3041" data-merged-at="2025-08-29T01:12:24Z" data-updated-at="2025-08-29T01:12:25Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3041" target="_blank" class="pr-title-link">[Bazel] Update bazel module to use jetty release branches</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3041</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Aug 29, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3040" data-merged-at="2025-08-27T06:00:36Z" data-updated-at="2025-08-27T06:00:36Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3040" target="_blank" class="pr-title-link">Update references of main to gz-sim10</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3040</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Aug 27, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3038" data-merged-at="2025-08-27T00:33:28Z" data-updated-at="2025-08-27T00:33:28Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3038" target="_blank" class="pr-title-link">Update changelog for 10.0.0</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3038</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Aug 27, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="completed" data-number="3034" data-merged-at="2025-08-19T08:29:19Z" data-updated-at="2025-08-25T05:17:59Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3034" target="_blank" class="pr-title-link">Fix compatibility with protobuf v30</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3034</span>
+                            <span>by <span class="pr-author">@scpeters</span></span>
+                            <span>merged on Aug 19, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><a href="https://github.com/gazebosim/gz-sim/pull/3037" target="_blank" class="badge badge-merged">✓ #3037</a></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3032" data-merged-at="2025-08-18T18:34:09Z" data-updated-at="2025-08-18T18:34:10Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3032" target="_blank" class="pr-title-link">Fix compatibility with protobuf v30</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3032</span>
+                            <span>by <span class="pr-author">@iche033</span></span>
+                            <span>merged on Aug 18, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3030" data-merged-at="2025-08-14T19:31:02Z" data-updated-at="2025-08-14T19:31:02Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3030" target="_blank" class="pr-title-link">Merge gz-sim9 ➡️  main</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3030</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Aug 14, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+
+            <tr data-category="other" data-number="3029" data-merged-at="2025-08-13T20:03:21Z" data-updated-at="2025-08-13T20:07:11Z">
+                <td>
+                    <div class="pr-info">
+                        <a href="https://github.com/gazebosim/gz-sim/pull/3029" target="_blank" class="pr-title-link">Merge gz-sim8 ➡️  gz-sim9</a>
+                        <div class="pr-meta">
+                            <span class="pr-number">#3029</span>
+                            <span>by <span class="pr-author">@azeey</span></span>
+                            <span>merged on Aug 13, 2025</span>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+<td><span class="badge-none">-</span></td>
+                <td class="comment-cell"></td>
+            </tr>
+        
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let currentFilter = 'all';
+        
+        function setFilter(filter, element) {
+            currentFilter = filter;
+            
+            // Update active button styling
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            
+            applyFilters();
+        }
+        
+        function applyFilters() {
+            const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+            const rows = document.querySelectorAll('#tableBody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const category = row.getAttribute('data-category');
+                
+                const matchesSearch = text.includes(searchVal);
+                let matchesFilter = true;
+                
+                if (currentFilter === 'pending') {
+                    matchesFilter = (category === 'pending');
+                } else if (currentFilter === 'completed') {
+                    matchesFilter = (category === 'completed');
+                }
+                
+                if (matchesSearch && matchesFilter) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        function applySorting() {
+            const sortBy = document.getElementById('sortBy').value;
+            const tbody = document.getElementById('tableBody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            rows.sort((a, b) => {
+                let valA, valB;
+                if (sortBy === 'mergeDate') {
+                    valA = a.getAttribute('data-merged-at') || '';
+                    valB = b.getAttribute('data-merged-at') || '';
+                    return valB.localeCompare(valA);
+                } else if (sortBy === 'prNumber') {
+                    valA = parseInt(a.getAttribute('data-number') || '0');
+                    valB = parseInt(b.getAttribute('data-number') || '0');
+                    return valB - valA;
+                } else if (sortBy === 'updateDate') {
+                    valA = a.getAttribute('data-updated-at') || '';
+                    valB = b.getAttribute('data-updated-at') || '';
+                    return valB.localeCompare(valA);
+                }
+                return 0;
+            });
+            
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+    </script>
+</body>
+</html>
