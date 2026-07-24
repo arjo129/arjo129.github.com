@@ -29,12 +29,10 @@
 <p>As AI has become more pervasive in the 2020s, there is a lot of debate about whether it is ultimately a force for good or harm. Some point to Terminator and Skynet as a warning. Others point to productivity gains and practical utility. Given the range of predictions in fiction, I wanted to test whether we can get a rough, numerical view of what past science-fiction authors were imagining.</p>
 <h2 id="methodology">Methodology</h2>
 <p>I used AI-assisted code to scrape Wikipedia synopses for science-fiction books. The pipeline collected 864 synopses. I then used a VLM (Gemini Flash) to read each synopsis and categorize the role of AI in the story.</p>
-<p>For each book, I labeled:</p>
-<ul>
-<li>AI significance in the plot on a 0-5 scale</li>
-<li>Primary AI type: disembodied AI, robot, cyborg, tool, or hive mind</li>
-<li>Narrative role: protagonist, antagonist, mentor, or tool</li>
-</ul>
+<p>For each book, I labeled:
+* AI significance in the plot on a 0-5 scale
+* Primary AI type: disembodied AI, robot, cyborg, tool, or hive mind
+* Narrative role: protagonist, antagonist, mentor, or tool</p>
 <h2 id="results">Results</h2>
 <p><img src="/imgs/blog/sci_fi/dashboard.png" alt="floorplan annotation tool" width="100%"/></p>
 <p>You can view the complete interactive dashboard <a href="/apps/scifi_ai_dashboard.html">here</a>.</p>

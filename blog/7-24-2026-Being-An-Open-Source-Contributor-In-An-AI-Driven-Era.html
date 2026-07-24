@@ -1,0 +1,48 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <title>Being A Good Open Source Contributor In An AI Driven Era - Arjo's Blog</title>
+    <style>
+      .blog-post {
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navbar will be loaded here -->
+    <header></header>
+
+    <div class="container mt-5">
+      <article class="blog-post">
+        <p class="text-muted">July 24, 2026</p>
+        <h1 id="being-a-good-open-source-contributor-in-an-ai-driven-era">Being A Good Open Source Contributor In An AI Driven Era</h1>
+<blockquote>
+<p><strong>Disclaimer:</strong><br />
+The views and opinions expressed herein are solely my own and do not represent those of my employer or any associated institutions.</p>
+</blockquote>
+<p>Over the last few years, the software industry has seen a major upheaval in the nature of work. With AI agents being able to code reasonably well, we are seeing an overhaul of the industry. In my day job, I have the privilege of maintaining open-source tools that the robotics industry uses. The onslaught of AI has certainly made my job a lot more "interesting".</p>
+<p>For starters, I am seeing a much higher volume of code contributions to the libraries I am actively involved with. This has become a double-edged sword. On one hand, some people clearly set up agents to throw low-quality pull requests over the fence just so they can get their name stamped on a project. On the other hand, there is some really impressive engineering being done because of these tools. We are also seeing people who were previously too hesitant to ask questions in the open come up with very high-quality PRs. So, what differentiates a good quality AI-driven contribution from a bad one?</p>
+<p>It is my belief that software engineering is fundamentally a socio-technical process. Code is not just technical logic written in a vacuum; it is a historical record of human interaction, resource constraints, and the internal politics of an organization. If you have ever wondered why tool X is so poorly integrated with tool Y yet comes from the same organization, it is almost always a reflection of human and organizational factors rather than technical limitations.</p>
+<p>Because of this, an AI agent can optimize a standalone block of code, but it cannot understand the social context or the institutional memory behind why a system was designed a certain way. Good AI-driven contributions recognize this limitation. They are submittals that do not create an undue burden for project maintainers, adhere to existing project norms, and demonstrate an understanding of the project's broader ecosystem. As a contributor, you still need to be able to explain the human context of why the change you are proposing is actually needed.</p>
+<p>One example of a recent interaction I had with a drive-by contributor comes to mind (see <a href="https://github.com/gazebosim/gz-sim/pull/3737"> here</a>). In this interaction, the contributor initially made some mistakes in the setup but actively iterated with the maintainers of the project. He also clearly explained his testing process and recorded a video of the test he ran. This immediately gave me a lot more confidence that the change was worth my time to review. It is surprising how many AI-driven contributions I see where users just ask an AI to fix a certain bug and submit the PR without even building or running the code. If you have not used a piece of software, do not contribute to it. If you want to get involved in the community, start by running the software first.</p>
+<p>Another example of an interaction I had involved a set of trivial PRs that largely fixed documentation. The user opened more than 20 pull requests in a single day. Doing this put extreme strain on our CI workflows and blocked other people who needed those jobs to run. In addition, the user left the entire raw LLM output in the description, including the fact that he could not build the source code because he was on Windows. To make matters worse, one of the PRs involved a minor math change that could alter core behavior. While the math itself was correct, it was not something I wanted to roll out without someone actually testing it. Eventually, a specialist in that specific area opened a separate PR for the issue. I merged the specialist's PR because he understood the socio-technical context, meaning he could explain exactly why the change was needed and what it affected downstream.</p>
+<p>Apart from contributing code, another way to support open source is through code reviews. With the high volume of PRs we are currently receiving, this is incredibly valuable. As an unknown contributor, it may be hard to see the value in reviewing someone else's work, but if I see that a PR has been tested by multiple people, I will prioritize reviewing it. To help with this, I have added a new <a href="https://github.com/gazebosim/gz-sim/issues?q=state%3Aopen%20label%3Aneeds-behavorial-test">"needs behavioral testing"</a> tag in gz-sim. These are PRs that require complex, multi-step evaluation. <a href="https://github.com/gazebosim/gz-sim/pull/3365#issuecomment-4785390613">Recording a video or providing a screenshot of yourself testing the feature helps</a> get the request approved because it shows the tool has been evaluated. Requesting code changes is also helpful and is often a lower barrier to entry for new contributors.</p>
+<p>Despite the challenges of AI-generated noise, I do not think open source is dead. If anything, the rise of AI proves that open source works incredibly well for establishing the conventions and communities we all rely on, similar to what we see with React, the Linux kernel, or ROS 2. The interoperability we enjoy today is a direct result of these shared ecosystems. For instance, I can target the Linux kernel today and have my code run cross-platform via Apple containers and WSL. AI can generate code, but it cannot replicate the collaborative, human infrastructure that makes this cross-platform reality work.</p>
+<p>On the whole, I am cautiously optimistic that AI can be used in a beneficial way when interacting with open-source projects, provided contributors maintain respect for the maintenance process and the socio-technical communities behind them.</p>
+      </article>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <!-- Load navbar -->
+    <script src="/navbar.js"></script>
+  </body>
+</html>
